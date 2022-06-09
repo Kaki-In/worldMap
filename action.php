@@ -34,60 +34,61 @@ function randomColor() {
 	return $a;
 };
 
+$result="";
 try {
 if (isset($_REQUEST['action'])) {
 	if ($_REQUEST['action']=='refresh') {
-		echo "setPointsIds([";
+		$result.="setPointsIds([";
 		$a = sendrequest("SELECT * FROM Points", $conf["database-server"], $conf["database-user"], $conf["database-password"], $conf["database-name"]);
 		$n=0;
 		foreach ($a as $point) {
-			if ($n) {echo ", ";}
-			echo $point['id'];
+			if ($n) {$result.=", ";}
+			$result.=$point['id'];
 			$n++;
 		};
-		echo "]);";
+		$result.="]);";
 		foreach ($a as $point) {
 			$nomType = $shelveitem('Types', 'nom', 'id', $point['type']);
 			$colType = $shelveitem('Types', 'couleur', 'id', $point['type']);
-			echo "addPoint({$point['longitude']}, {$point['latitude']}, ".var_export($point['name'], true).", '{$point['id']}', ".var_export($nomType, true).", ".var_export($colType, true).");";
+			$result.="addPoint({$point['longitude']}, {$point['latitude']}, ".var_export($point['name'], true).", '{$point['id']}', ".var_export($nomType, true).", ".var_export($colType, true).");";
 		};
-		echo "document.getElementById('mapCenter').setAttribute('lon', ".$shelveitem('Centre', 'lon', 'id', 0).");";
-		echo "document.getElementById('mapCenter').setAttribute('lat', ".$shelveitem('Centre', 'lat', 'id', 0).");";}
+		$result.="document.getElementById('mapCenter').setAttribute('lon', ".$shelveitem('Centre', 'lon', 'id', 0).");";
+		$result.="document.getElementById('mapCenter').setAttribute('lat', ".$shelveitem('Centre', 'lat', 'id', 0).");";}
 	elseif ($_REQUEST['action']=='refreshTypes') {
 		$a = sendrequest("SELECT * FROM Types", $conf["database-server"], $conf["database-user"], $conf["database-password"], $conf["database-name"]);
-		echo "setTypes([";
+		$result.="setTypes([";
 		$n=0;
 		foreach ($a as $num=>$type) {
-			if ($n>0) {echo ", ";}
+			if ($n>0) {$result.=", ";}
 			$n++;
-			echo "[{$type['id']}, ".var_export($type['nom'], true)."]";
+			$result.="[{$type['id']}, ".var_export($type['nom'], true)."]";
 		};
-		echo "]);";
+		$result.="]);";
 	}
 	elseif ($_REQUEST['action']=="changePointName" and isset($_REQUEST['pointId']) and isset($_REQUEST['newName'])) {
 		$shelveitem->setItem('Points', 'Name', $_REQUEST['newName'], "id", $_REQUEST['pointId']);
-		echo "refresh(true);mapview.popup.close();";
+		$result.="refresh(true);mapview.popup.close();";
 	}
 	elseif ($_REQUEST['action']=="changeCenterPoint" and isset($_REQUEST['lat']) and isset($_REQUEST['lon'])) {
 		$shelveitem->setItem('Centre', 'lon', $_REQUEST['lon'], 'id', 0);
 		$shelveitem->setItem('Centre', 'lat', $_REQUEST['lat'], 'id', 0);
-		echo "refresh(true);";
+		$result.="refresh(true);";
 	}
 	elseif ($_REQUEST['action']=="refreshFirst") {
-		echo "mapview.goTo({center: [".$shelveitem('Centre', 'lon', 'id', 0).",".$shelveitem('Centre', 'lat', 'id', 0)."], 
+		$result.="mapview.goTo({center: [".$shelveitem('Centre', 'lon', 'id', 0).",".$shelveitem('Centre', 'lat', 'id', 0)."], 
                              zoom: 18}, {duration: 1000});refresh();";
 	}
 	elseif ($_REQUEST['action']=="addPoint" and isset($_REQUEST['lat']) and isset($_REQUEST['lon']) and isset($_REQUEST['name']) and isset($_REQUEST['type'])) {
 		$shelveitem->addItem('Points', ['longitude'=>$_REQUEST['lon'], 'latitude'=>$_REQUEST['lat'], 'name'=>$_REQUEST['name'], 'type'=>$_REQUEST['type']]);
-		echo "refresh(true);";
+		$result.="refresh(true);";
 	}
 	elseif ($_REQUEST['action']=="deletePoint" and isset($_REQUEST['pointId'])) {
 		$shelveitem->delItem('Points', "id", $_REQUEST['pointId']);
-		echo "refresh(true);";
+		$result.="refresh(true);";
 	}
 	elseif ($_REQUEST['action']=="addType" and isset($_REQUEST['name'])) {
 		if ($shelveitem('Types', 'nom', 'nom', $_REQUEST['name'])==$_REQUEST['name']) {
-			echo "alert('Un script du même nom existe déjà');document.getElementById('askTypeName').status='failed';";
+			$result.="alert('Un script du même nom existe déjà');document.getElementById('askTypeName').status='failed';";
 		}
 		else {
 			$col = randomColor();
@@ -95,15 +96,16 @@ if (isset($_REQUEST['action'])) {
 				$col=randomColor();
 			};
 			$shelveitem->addItem('Types', ['nom'=>$_REQUEST['name'], 'couleur'=>$col]);
-			echo "refreshTypes();";
+			$result.="refreshTypes();";
 		};
 	}
 	elseif ($_REQUEST['action']=="changePointType" and isset($_REQUEST['pointId']) and isset($_REQUEST['newType'])) {
 		$shelveitem->setItem('Points', 'type', $_REQUEST['newType'], 'id', $_REQUEST['pointId']);
-		echo 'refresh(true)';
+		$result.='refresh(true)';
 	};
 };
+echo $result;
 }
-catch (Exception $e) {echo "alert('Impossible de se connecter au serveur. Veuillez vérifier la configuration');";die;}
+catch (Exception $e) {echo "alert(".var_export("Impossible de se connecter au serveur. Veuillez vérifier la configuration (".$e->getMessage().")", true).");";die;}
 
 ?>
