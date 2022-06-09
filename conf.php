@@ -2,6 +2,6 @@
 $conf = array();
 $conf["database-server"]="localhost";
 $conf["database-user"]="root";
-$conf["database-password"]="Caribou!33";
+$conf["database-password"]=null;
 $conf["database-name"]="worldMap";
 ?>
