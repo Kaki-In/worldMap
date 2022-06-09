@@ -1,0 +1,721 @@
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    	<title>Carte du monde</title>
+
+		<style>
+html, body, #viewDiv {
+	padding: 0;
+	margin: 0;
+	height: 100%;
+	width: 100%;
+	font-family: "Roboto", sans-serif;
+}
+
+.bottom-right-div {
+	position:fixed;
+	top:10px;
+	left:100px;
+	height:50px;
+	display : online-block;
+}
+
+button, input[type='button'], input[type='submit'] {
+	border:3px solid black;
+	color:black;
+	font-decoration:upper-case;
+	transition:0.25s all ease-out;
+	padding:10px;
+	margin:10px;
+	cursor : pointer;
+}
+
+button:focus, input[type='button']:focus, input[type='submit']:focus {
+	border:3px solid #12b7ff;
+	color:#22b7ff;
+	transition:0.25s all ease-out;
+}
+
+select {
+	border:3px solid black;
+	color:black;
+	transition:0.25s all ease-out;
+	padding:10px;
+	margin:10px;
+	width:250px;
+	background:#fff;
+}
+
+select:focus {
+	border:3px solid #12b7ff;
+	color:#22b7ff;
+	transition:0.25s all ease-out;
+}
+
+input[type='text'], input[type='password'] {
+	border:3px solid black;
+	color:black;
+	transition:0.25s all ease-out;
+	padding:10px;
+	margin:10px;
+	width:250px;
+}
+
+input[type='text']:focus, input[type='password']:focus {
+	border:3px solid #12b7ff;
+	color:#22b7ff;
+	transition:0.25s all ease-out;
+}
+
+.round {
+	height:40px;
+	border-radius:40px;
+}
+
+.round2 {
+	height:40px;
+	border-radius:10px;
+}
+
+.point {
+	z-index:10;
+	position:absolute;
+	height:20px;
+	width:20px;
+	border : 5px solid #ffffff88;
+	transform:rotate(45deg);
+	background:var(--background);
+	border-radius:20px 20px 5px 20px;
+}
+
+.point:before {
+	position:relative;
+	content : attr(name);
+	transform:rotate(-45deg);
+	display:block;
+	top:-20px;
+	right:-20px;
+	width:auto;
+	white-space : nowrap;
+	color:var(--background);
+}
+
+.point:not([selected]) {
+	border-color:#00000088;
+}
+
+.no-exit {
+	z-index:3;
+	position:absolute;
+	height:100%;
+	width:100%;
+	top:0;
+	left:0;
+	overflow:hidden;
+	pointer-events:None;
+}
+
+#mainMap {
+	z-index:5;
+}
+
+div .onXOnly {
+	overflow-x : scroll;
+	white-space: nowrap;
+}
+
+#askDiv {
+	z-index:15;
+	position:fixed;
+	display:normal;
+	top:0;
+	left:0;
+	height:100%;
+	width:100%;
+	background:#ffffffcc;
+}
+
+#askDiv:not(.opened) {
+	display:none;
+}
+
+#askDiv div {
+	z-index:20;
+	position:fixed;
+	top:20%;
+	left:20%;
+	width:60%;
+	height:30%;
+}
+
+#askDiv div:not(.opened) {
+	display:none;
+}
+
+#mapCenter {
+	position : absolute;
+	border : 2px solid #12b7ff;
+	height:10px;
+	width:10px;
+	background:None;
+	border-radius : 20px;
+}
+
+#mapCenter:before {
+	display:block;
+	content:" ";
+	position : relative;
+	height:23px;
+	width:2px;
+	background:#12b7ff;
+	border-radius : 5px;
+	left:4px;
+	top:-7px;
+}
+
+#mapCenter:after {
+	display:block;
+	content:" ";
+	position : relative;
+	height:2px;
+	width:23px;
+	background:#12b7ff;
+	border-radius : 5px;
+	left:-7px;
+	bottom:19px;
+}
+
+h1, h2 {
+	color:#12b7ff;
+}
+
+#pointsDiv {
+	z-index : 50;
+	position:fixed;
+	display:block;
+	height:100%;
+	top:0;
+	width:500px;
+	background:#0000;
+	left:-500px;
+	transition:0.5s all ease-out;
+	overflow : scroll;
+}
+
+#pointsDiv.opened {
+	left:0px;
+	background:white;
+	transition:0.5s all ease-out;
+}
+
+#openBtn {
+	position:fixed;
+	display:block;
+	top:50%;
+	width:50px;
+	height:50px;
+	left:0;
+	background:#12b7ff;
+	transition:0.25s all ease-out;
+	cursor : pointer;
+}
+
+#pointsDiv.opened #openBtn {
+	transition:0.25s all ease-out;
+	left:50%;
+	top:0px;
+}
+
+#pointsList {
+	list-style-type : none;
+}
+
+#pointsList li {
+	padding-left : 0px;
+}
+
+#pointsList li .point {
+	position:relative;
+	right:25px;
+	top:10px;
+	display : inline-block;
+}
+
+#pointsList li label {
+	padding-left : 10px;
+}
+
+#pointsList li pre {
+	padding : 0;
+}
+
+.hidden {
+	display : None;
+}
+
+		</style>
+
+		<link rel="stylesheet" href="https://js.arcgis.com/4.18/esri/themes/light/main.css">
+		<script src="https://js.arcgis.com/4.18/"></script>
+	</head>
+	<body>
+		<div id = 'mainMap' style = 'width:100%;height:100%'></div>
+		<div class='bottom-right-div'>
+			<button class='round' id='goto-btn'>Centrer</button>
+			<button class='round hidden' id='stopfollowbtn' onclick="centeredPoint=-1">Arrêter le suivi</button>
+		</div>
+		<div id='pointsZone' class='no-exit'>
+		</div>
+		<div class='no-exit'>
+			<div id='mapCenter' lon='7.294216' lat = '47.77702603534631'></div>
+		</div>
+		<div id='askDiv'>
+			<div id='askName'>
+				<h1>Renommer le point</h1>
+				<label>Veuillez entrer le nouveau nom du point: </label><br>
+				<input type='text' id='newNameOnly'/>
+				<button id='askNameBtn1' onclick='setTimeout(closeDialog, 500, this.parentNode, true);'>Annuler</button>
+				<button id='askNameBtn2' onclick='setTimeout(finalise, 500, this.parentNode);'>Valider</button>
+			</div>
+			<div id='askTypeName'>
+				<h1>Créer un type</h1>
+				<label>Veuillez entrer le nom du nouveau type: </label><br>
+				<input type='text' id='newTypeName'/>
+				<button id='askNameBtn1' onclick='setTimeout(closeDialog, 500, this.parentNode, true);'>Annuler</button>
+				<button id='askNameBtn2' onclick='setTimeout(finalise, 500, this.parentNode);'>Valider</button>
+			</div>
+			<div id='askType'>
+				<h1>Changer le type du point</h1>
+				<label>Veuillez sélectionner le type du point: </label><br>
+				<select id='newTypeOnly'>
+				</select>
+				<button id='askNameBtn1' onclick='setTimeout(closeDialog, 500, this.parentNode, true);'>Annuler</button>
+				<button id='askNameBtn2' onclick='setTimeout(finalise, 500, this.parentNode);'>Valider</button>
+			</div>
+			<div id='askNameAndType'>
+				<h1>Ajouter un point</h1>
+				<label>Veuillez entrer le nom du point: </label><br>
+				<input type='text' id='newName'/><br><br>
+				<label>Veuillez sélectionner le type du point: </label><br>
+				<select id='newType'>
+				</select><br>
+				<button id='askNameBtn1' onclick='setTimeout(closeDialog, 500, this.parentNode, true);'>Annuler</button>
+				<button id='askNameBtn2' onclick='setTimeout(finalise, 500, this.parentNode);'>Valider</button>
+			</div>
+			<div id='askYesOrNo'>
+				<h1>Retirer un point</h1>
+				<label>Êtes-vous sûr(e) de vouloir retirer ce point?</label><br>
+				<button id='askNameBtn1' onclick='setTimeout(closeDialog, 500, this.parentNode, true);'>Annuler</button>
+				<button id='askNameBtn2' onclick='setTimeout(finalise, 500, this.parentNode);'>Valider</button>
+			</div>
+		</div>
+		<div id='pointsDiv'>
+			<div id='openBtn' onclick="this.parentNode.classList.toggle('opened')">
+				<div class='point'>
+					Points
+				</div>
+			</div>
+			<h2>Points sur la carte :</h2>
+			<ul id='pointsList'></ul>
+		</div>
+		<script>
+
+sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
+var mapview;
+var centeredPoint=-1;
+
+function getHtmlElement(pointId, mode) {
+	points = document.getElementById("pointsZone");
+	for (let i=0;i<points.children.length;i++) {
+		if (points.children[i].getAttribute("pointId")==pointId){
+			p=points.children[i];
+			break;
+		};
+	};
+	if (p) {
+		div = document.createElement('div');
+		divType=document.createElement('div');
+		divType.classList.add('point');
+		divType.style.setProperty('--background', p.style.getPropertyValue('--background'));
+		div.appendChild(divType);
+		txtName = document.createElement('p');
+		txtName2 = document.createElement('b');
+		txtName2.textContent=p.getAttribute('type');
+		txtName.style.padding=5;
+		txtName.style['padding-left']=30;
+		txtName.appendChild(txtName2);
+		div.appendChild(txtName);
+		txt = document.createElement('pre');
+		txt.textContent=p.getAttribute('lon')+', '+p.getAttribute('lat');
+		div.appendChild(txt);
+		div2=document.createElement('div');
+		div.appendChild(div2);
+		div2.classList.add('onXOnly');
+
+		if (mode==0) {
+			buttonr = document.createElement('button');
+			buttonr.textContent='Retirer le point';
+			buttonr.classList.add('round2');
+			buttonr.setAttribute('onclick', "removePoint('"+p.getAttribute('pointId')+"');");
+			div2.appendChild(buttonr);
+			buttonr = document.createElement('button');
+			buttonr.textContent='Renommer le point';
+			buttonr.classList.add('round2');
+			buttonr.setAttribute('onclick', "changePointName('"+p.getAttribute('pointId')+"');");
+			div2.appendChild(buttonr);
+			buttonc = document.createElement('button');
+			buttonc.textContent='Changer le type de point';
+			buttonc.classList.add('round2');
+			buttonc.setAttribute('onclick', "changePointType('"+p.getAttribute('pointId')+"');");
+			div2.appendChild(buttonc);
+			buttons = document.createElement('button');
+			buttons.textContent='Suivre le point';
+			buttons.classList.add('round2');
+			buttons.setAttribute('onclick', "centeredPoint="+p.getAttribute('pointId'));
+			div2.appendChild(buttons);
+			buttonc = document.createElement('button');
+			buttonc.textContent='Définir comme centre';
+			buttonc.classList.add('round2');
+			buttonc.setAttribute('onclick', "setCenter('"+p.getAttribute('lon')+"', '"+p.getAttribute('lat')+"');");
+			div2.appendChild(buttonc);
+		};
+		if (mode==1) {
+			buttonr = document.createElement('button');
+			buttonr.textContent='Ajouter un point';
+			buttonr.classList.add('round2');
+			buttonr.setAttribute('onclick', "addAPointOnServer('"+p.getAttribute('lon')+"', '"+p.getAttribute('lat')+"');");
+			div2.appendChild(buttonr);
+			buttonc = document.createElement('button');
+			buttonc.textContent='Définir comme centre';
+			buttonc.classList.add('round2');
+			buttonc.setAttribute('onclick', "setCenter('"+p.getAttribute('lon')+"', '"+p.getAttribute('lat')+"');");
+			div2.appendChild(buttonc);
+		};
+	}
+	else {
+		div = document.createElement('div');
+		txtName = document.createElement('p');
+		txtName2 = document.createElement('b');
+		txtName2.textContent="Impossible de trouver le point recherché";
+		txtName.appendChild(txtName2);
+		div.appendChild(txtName);
+		div.appendChild(document.createElement('br'));
+	};
+	return div;
+}
+
+function setPointsIds(idlist) {
+	points = document.getElementById("pointsZone");
+	a = points.children;
+	for (let i=0;i<a.length;i++) {
+		if (a[i].getAttribute("pointId")!='localp'){
+			sel = a[i].classList.contains('selected');
+			id = a[i].getAttribute('pointId');
+			points.removeChild(a[i]);
+			if (idlist.includes(id)) {
+				p=addPoint(0, 0, '', id, 0, '#000');
+				if (sel) {
+					p.classList.add('selected');
+				};
+			};
+		};
+	};
+	points = document.getElementById('pointsList');
+	for (i=0;points.children.length>0;i++) {
+		points.removeChild(points.children[0]);
+	};
+};
+
+function addPoint(long, lat, name, id, type, backcol) {
+	p = document.createElement('div');
+	points = document.getElementById("pointsZone");
+	for (let i=0;i<points.children.length;i++) {
+		if (points.children[i].getAttribute("pointId")==id){
+			p=points.children[i];
+			break;
+		};
+	};
+	p.setAttribute('lat', lat);
+	p.setAttribute('lon', long);
+	p.setAttribute('name', name);
+	p.setAttribute('pointId', id);
+	p.setAttribute('type', type);
+	p.classList.add('point');
+	p.style.setProperty('--background', backcol);
+	document.getElementById('pointsZone').appendChild(p);
+
+	elem = document.createElement('li');
+	ps = document.createElement('div');
+	ps.classList.add('point');
+	ps.style.setProperty('--background', backcol);
+	elem.appendChild(ps);
+	txt = document.createElement("h3");
+	txt.textContent = name;
+	txt.style['display']='inline-block';
+	elem.appendChild(txt);
+	txt = document.createElement("label");
+	txt.textContent = type;
+	txt.style['display']='inline-block';
+	elem.appendChild(txt);
+	elem.appendChild(document.createElement('br'));
+	txt = document.createElement("pre");
+	txt.textContent = long + ', ' + lat;
+	txt.style['display']='inline-block';
+	elem.appendChild(txt);
+	txt = document.createElement("button");
+	txt.textContent = 'Centrer';
+	txt.style['display']='inline-block';
+	txt.setAttribute('onclick', 'mapview.goTo({center: ['+long+', '+lat+'], zoom: 18}, {duration: 1000})');
+	elem.appendChild(txt);
+	txt = document.createElement("button");
+	txt.textContent = 'Suivre';
+	txt.style['display']='inline-block';
+	txt.setAttribute('onclick', 'document.getElementById("pointsDiv").classList.remove("opened");centeredPoint='+id);
+	elem.appendChild(txt);document.getElementById('pointsList').appendChild(elem);
+
+	return p;
+}
+
+async function actualize_points (mapview){
+	points=document.getElementById('pointsZone');
+	for (let i=0;i<points.children.length;i++) {
+		p = mapview.toScreen({x:points.children[i].getAttribute('lon'), y:points.children[i].getAttribute('lat'), spatialReference:{wkid:4326}});
+		points.children[i].style['left']=p.x-15;
+		points.children[i].style['top']=p.y-30;
+	};
+	p = mapview.toScreen({x:document.getElementById('mapCenter').getAttribute('lon'), y:document.getElementById('mapCenter').getAttribute('lat'), spatialReference:{wkid:4326}});
+	document.getElementById('mapCenter').style['left']=p.x-6;
+	document.getElementById('mapCenter').style['top']=p.y-6;
+	if (centeredPoint!=-1) {
+		for (let i=0;i<points.children.length;i++) {
+			if (points.children[i].getAttribute("pointId")==centeredPoint){
+				point=points.children[i];
+				mapview.goTo({center : [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]}, {duration:150});
+				document.getElementById("stopfollowbtn").classList.remove("hidden");
+				break;
+			};
+		};
+	}
+	else {document.getElementById("stopfollowbtn").classList.add("hidden");}
+	setTimeout(actualize_points, 10, mapview);
+};
+
+require (["esri/config","esri/Map","esri/views/MapView"],
+	function(esriConfig,Map,MapView) {
+		esriConfig.apiKey = "AAPK3f8377a6b0ae49539c5a95223377fbfaEsELNnhZ6Qd0G3m8d26kcm9L3vGEWHlhRKFEEfQaAaTnCgXR8viG12yIxwqX04oc";//"YOUR-API-KEY";
+		let map1 = new Map({basemap:"osm-standard-relief"})
+		mapview = new MapView({container: "mainMap", map: map1,
+				   center: [ 7.293661, 47.776971],
+                             zoom: 18});
+		document.getElementById('goto-btn').onclick=function () {
+				mapview.goTo({center: [ Number(document.getElementById('mapCenter').getAttribute('lon')), Number(document.getElementById('mapCenter').getAttribute('lat'))],
+                             zoom: 18}, {duration: 1000});
+		};
+		mapview.when(function (event) {send('action=refreshFirst');actualize_points(mapview);}, function (event){});
+		mapview.on('hold', function (event) {
+			mainPoint(event.mapPoint);
+		});
+		mapview.on('double-click', function (event) {
+			mainPoint(event.mapPoint);
+		});
+		mapview.on('immediate-click', function (event) {
+			if (document.getElementById('localp')) {document.getElementById('pointsZone').removeChild(document.getElementById('localp'));}
+			for (let i=0;i<points.children.length;i++) {
+				points.children[i].removeAttribute('selected');
+			};
+		});
+	}
+);
+
+function mainPoint(point) {
+	if (document.getElementById('localp')) {document.getElementById('pointsZone').removeChild(document.getElementById('localp'));}
+	xy = mapview.toScreen(point);
+	d = [null, null];
+	points=document.getElementById('pointsZone');
+	for (let i=0;i<points.children.length;i++) {
+		points.children[i].removeAttribute('selected');
+		p = mapview.toScreen({x:points.children[i].getAttribute('lon'), y:points.children[i].getAttribute('lat'), spatialReference:{wkid:4326}});
+		if (d[0]==null | d[1]>Math.sqrt((xy.x-p.x)**2+(xy.y-p.y)**2)) {d=[i, Math.sqrt((xy.x-p.x)**2+(xy.y-p.y)**2)];}
+	};
+	if (d[0]===null) {return}
+	if (d[1]<50) {
+		points.children[d[0]].setAttribute('selected', '');
+		mapview.popup.open({
+			// Set the popup's title to the coordinates of the location
+			title: points.children[d[0]].getAttribute("name"),
+			location: {x:points.children[d[0]].getAttribute('lon'), y:points.children[d[0]].getAttribute('lat')}, // Set the location of the popup to the clicked location
+			content: getHtmlElement(points.children[d[0]].getAttribute('pointId'), 0)  // content displayed in the popup
+		});
+	}
+	else {
+		newp = addPoint(point.longitude, point.latitude, point.longitude+", "+point.latitude, "localp", 'Point de repère', '#12b7ff');
+		newp.setAttribute('id', 'localp');
+		newp.setAttribute('selected', '');
+		mapview.popup.open({
+			// Set the popup's title to the coordinates of the location
+			title: "Localisation: [" + point.longitude + ", " + point.latitude + "]",
+			location: point, // Set the location of the popup to the clicked location
+			content: getHtmlElement("localp", 1)  // content displayed in the popup
+		});
+	};
+};
+
+function refresh(notagain) {
+	send("action=refresh");
+	if (!notagain) {
+		setTimeout(refresh, 10000);
+	};
+};
+
+function setTypes(types) {
+	for (i=0;document.getElementById('newType').children.length>0;i++) {
+		document.getElementById('newType').removeChild(document.getElementById('newType').children[0]);
+	}
+	for (i=0;document.getElementById('newTypeOnly').children.length>0;i++) {
+		document.getElementById('newTypeOnly').removeChild(document.getElementById('newTypeOnly').children[0]);
+	}
+	for (i=0;i<types.length;i++) {
+		opt = document.createElement('option');
+		opt.value=types[i][0];
+		opt.textContent=types[i][1];
+		document.getElementById('newType').appendChild(opt);
+		opt = document.createElement('option');
+		opt.value=types[i][0];
+		opt.textContent=types[i][1];
+		document.getElementById('newTypeOnly').appendChild(opt);
+	};
+	opt = document.createElement('option');
+	opt.value='new';
+	opt.textContent='Nouveau type...';
+	document.getElementById('newType').appendChild(opt);
+	opt = document.createElement('option');
+	opt.value='new';
+	opt.textContent='Nouveau type...';
+	document.getElementById('newTypeOnly').appendChild(opt);
+};
+
+function refreshTypes() {
+	send("action=refreshTypes");
+};
+
+function removePoint(pointId) {
+	send('action=deletePoint&pointId='+pointId);
+	mapview.popup.close();
+};
+
+function setCenter(lon, lat) {
+	send('action=changeCenterPoint&lon='+lon+'&lat='+lat);
+};
+
+function showDialog(dial) {
+	document.getElementById('askDiv').classList.add('opened');
+	dial.classList.add('opened');
+	dial.status='main';
+};
+
+function closeDialog(dial, all = false) {
+	dial.status='cancelled';
+	dial.classList.remove('opened');
+	if (all) {
+		document.getElementById('askDiv').classList.remove('opened');
+		for (i=0;i<document.getElementById('askDiv').children.length; i++) {
+			document.getElementById('askDiv').children[i].classList.remove('opened');
+		};
+	};
+};
+
+async function changePointType(pointId) {
+	refreshTypes();
+	showDialog(document.getElementById('askType'));
+	while (document.getElementById('askType').status=='main') {
+		await sleep(0.5);
+		if (document.getElementById('newTypeOnly').value=='new') {
+			closeDialog(document.getElementById('askType'));
+			await addAType();
+			refreshTypes();
+			showDialog(document.getElementById('askType'));
+			a = document.getElementById('newTypeOnly').children.length;
+			while (a==document.getElementById('newTypeOnly').children.length&&document.getElementById('askTypeName').status=='accepted') {
+				await sleep(0.5);
+			};
+			document.getElementById('newTypeOnly').value=document.getElementById('newTypeOnly').children[document.getElementById('newTypeOnly').children.length-2].value;
+		}
+	};
+	if (document.getElementById('askType').status=='accepted') {
+			send("action=changePointType&pointId="+pointId+"&newType="+document.getElementById('newTypeOnly').value);
+			mapview.popup.close();
+	};
+};
+
+async function changePointName(pointId) {
+	points=document.getElementById('pointsZone');
+	for (let i=0;i<points.children.length;i++) {
+		if (points.children[i].getAttribute("pointId")==pointId){
+			p=points.children[i];
+			break;
+		};
+	};
+	if (p) {
+		document.getElementById('newNameOnly').value=p.getAttribute('name');
+		showDialog(document.getElementById('askName'));
+	};
+	while (document.getElementById('askName').status=='main') {
+		await sleep(0.5);
+	};
+	if (document.getElementById('askName').status=='accepted') {
+		send("action=changePointName&pointId="+pointId+"&newName="+document.getElementById('newNameOnly').value);
+	};
+};
+
+async function addAPointOnServer(lon, lat) {
+	refreshTypes();
+	showDialog(document.getElementById('askNameAndType'));
+	while (document.getElementById('askNameAndType').status=='main') {
+		await sleep(0.5);
+		if (document.getElementById('newType').value=='new') {
+			closeDialog(document.getElementById('askNameAndType'));
+			await addAType();
+			refreshTypes();
+			showDialog(document.getElementById('askNameAndType'));
+			a = document.getElementById('newType').children.length;
+			while (a==document.getElementById('newType').children.length&&document.getElementById('askTypeName').status=='accepted') {
+				await sleep(0.5);
+			};
+			document.getElementById('newType').value=document.getElementById('newType').children[document.getElementById('newType').children.length-2].value;
+		}
+	};
+	if (document.getElementById('askNameAndType').status=='accepted') {
+			send("action=addPoint&lon="+lon+"&lat="+lat+"&name="+document.getElementById('newName').value+"&type="+document.getElementById('newType').value);
+			mapview.popup.close();
+			if (document.getElementById('localp')) {document.getElementById('pointsZone').removeChild(document.getElementById('localp'));}
+	};
+};
+
+async function addAType() {
+	showDialog(document.getElementById('askTypeName'));
+	while (document.getElementById('askTypeName').status=='main') {
+		await sleep(0.5);
+	};
+	if (document.getElementById('askTypeName').status=='accepted') {
+		if (document.getElementById('newTypeName').value){
+			send("action=addType&name="+document.getElementById('newTypeName').value);
+		};
+	};
+};
+
+function finalise(elem) {
+	closeDialog(elem, true);
+	elem.status='accepted';
+};
+
+function send (request) {
+	script = document.createElement('script');
+	script.src = './action.php?'+request;
+	document.body.appendChild(script);
+};
+
+		</script>
+	</body>
+</html>
