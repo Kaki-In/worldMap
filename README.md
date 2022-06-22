@@ -1,6 +1,9 @@
 # worldMap
 Downloadable online world map
 
+## How does it look like inside?
+![app_preview](https://chat.flopcreation.fr/sharegit/previewworldmap.png)
+
 ## Installation
 ### 1. Download
 Run the following command in your server (in the directory where you want to install the map):
@@ -22,3 +25,4 @@ To configure the map, open the `conf.php` project and modify the different value
 ## Results
 
 If your `conf.php` file is well setted up, you'll be able to use points on your map. Else, an error will be displayed instead.
+
