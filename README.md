@@ -2,7 +2,7 @@
 Downloadable online world map
 
 ## How does it look like inside?
-![app_preview](https://chat.flopcreation.fr/sharegit/previewworldmap.png)
+![app_preview](https://chat.flopcreation.fr/sharegit/previewworldmap2.png)
 
 ## Installation
 ### 1. Download
